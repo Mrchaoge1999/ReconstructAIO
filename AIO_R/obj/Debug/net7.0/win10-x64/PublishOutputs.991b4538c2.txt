@@ -1,0 +1,2 @@
+C:\Users\15539\source\repos\AIO_R\AIO_R\bin\Debug\net7.0\win10-x64\publish\AIO_R.pdb
+C:\Users\15539\source\repos\AIO_R\AIO_R\bin\Debug\net7.0\win10-x64\publish\AIO_R.exe
