@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using XSystem.Security.Cryptography;
 using static AIO_R.NetInterface;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace AIO_R.ABC_Buy
 {
@@ -23,6 +24,7 @@ namespace AIO_R.ABC_Buy
                 CheckRaffle();
             }
             else { }
+          // GlobalInfo.changedListTask.Enqueue(botTasks);//result need to write
         }
         private void GetSpecificId(string info)
         {

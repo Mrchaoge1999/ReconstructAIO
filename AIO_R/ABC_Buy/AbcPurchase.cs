@@ -16,6 +16,7 @@ namespace AIO_R.ABC_Buy
         {
             Console.WriteLine("test");
             Thread.Sleep(1000);
+           // GlobalInfo.changedListTask.Enqueue(botTasks);//result need to write
         }
         public override void AddToCart()
         {

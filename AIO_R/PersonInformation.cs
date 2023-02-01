@@ -1,7 +1,9 @@
 ﻿using CsvHelper;
+using CsvHelper.TypeConversion;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -15,18 +17,12 @@ namespace AIO_R
     {
         private static readonly PersonInformation _personInformationInstance = new PersonInformation();
 
-        public static ManualResetEvent defaultWriteMre = new ManualResetEvent(true);
-
-        private readonly ConcurrentQueue<Dictionary<string, BotTask>> _que = new ConcurrentQueue<Dictionary<string, BotTask>>();
-
-        private readonly ManualResetEvent _mre = new ManualResetEvent(false);
+        private ConcurrentQueue<List<BotTask>> _que = new ConcurrentQueue<List<BotTask>>();
 
         public static PersonInformation Instance { get { return _personInformationInstance; } }
 
         public string path = Environment.CurrentDirectory + "\\task.csv";
 
-        private string successPath = Environment.CurrentDirectory + "\\CheckSuccess.csv";
-        
         public List<BotTask> listTask { get; set; }
         private PersonInformation()
         {
@@ -42,80 +38,72 @@ namespace AIO_R
                 {
                     using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))//CultureInfo.InvariantCulture
                     {
-                        listTask = csv.GetRecords<BotTask>().ToList();
+                        listTask = csv.GetRecords<BotTask>().ToList();//test
                     }
                 }
             }
             GlobalInfo.listTask = listTask;
+            GlobalInfo.newListTask = new List<BotTask>(listTask);
             GlobalInfo.taskNumber = listTask.Count;
         }
-        private void writebecsv()
+        private void WriteCsv()
         {
             while (true)
             {
-                _mre.WaitOne();
-                Dictionary<string, BotTask> dic;
-                while (_que.Count > 0 && _que.TryDequeue(out dic))
+                List<BotTask> buffer = new List<BotTask>();
+                while (_que.Count > 0 && _que.TryDequeue(out buffer) == false) ;
+                if (buffer.Count.Equals(0)) { return; }
+                bool isExist = false;
+                foreach (var i in buffer)
                 {
-                    bool isexist = false;
-                    foreach (var i in dic)
+                    try
                     {
-                        try
+                        BotTask whereClass = GlobalInfo.newListTask.FirstOrDefault(t => t.email == i.email);
+                        if (whereClass != null)
                         {
-                            BotTask whereClass = listTask.FirstOrDefault(t => t.email == i.Key);
-                            if (whereClass != null)
-                            {
-                                whereClass = i.Value;
-                                isexist = true;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
+                            whereClass = i;
+                            isExist = true;
                         }
                     }
-                    while (isexist)
+                    catch (Exception) { }
+                }
+                while (isExist)
+                {
+                    try
                     {
-                        try
+                        using (var writer = new StreamWriter(path))
+                        //  using (var writer = new StreamWriter(Path.Combine(Environment.CurrentDirectory, "task.csv"), false,Encoding.GetEncoding("gb2312")))
                         {
-                            using (var writer = new StreamWriter(Path.Combine(Environment.CurrentDirectory, "task.csv")))
-                            //  using (var writer = new StreamWriter(Path.Combine(Environment.CurrentDirectory, "task.csv"), false,Encoding.GetEncoding("gb2312")))
+                            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
                             {
-                                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-                                {
-                                    csv.WriteRecords(listTask);
-                                }
+                                csv.WriteRecords(GlobalInfo.newListTask);
                             }
                         }
-                        catch (IOException ex)
-                        {
-                            Thread.Sleep(1000);
-                            Console.WriteLine(ex.ToString());
-                        }
                     }
-                    defaultWriteMre.Set();
-                    _mre.Reset();
+                    catch (IOException ex)
+                    {
+                        Thread.Sleep(1000);
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine(ex.ToString());
+                    }
                 }
             }
         }
-        public void writesuccess(List<CheckSuccess> cs)
+        public void WriteFinalBuffer()
         {
-            using (var writer = new StreamWriter(successPath))
+            while (_que.Count != 0)
             {
-                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-                {
-                    csv.WriteRecords(cs);
-                }
+                Thread.Sleep(500);
             }
         }
-        public void writeque(Dictionary<string, BotTask> botTask)
+        public void WriteQue(List<BotTask> botTasks)
         {
-            _que.Enqueue(botTask);
-            defaultWriteMre.Reset();
-            _mre.Set();
+            List<BotTask> BotTasksBuffer = new List<BotTask>(botTasks);
+            _que.Enqueue(BotTasksBuffer);
         }
         public void RegisterWriteCsv()
         {
-            Task proxyAddTask = Task.Factory.StartNew(writebecsv);
+            Task proxyAddTask = Task.Factory.StartNew(WriteCsv);
         }
     }
     public class BotTask

@@ -1,8 +1,10 @@
 ﻿using AIO_R.ABC_Buy;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Numerics;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Schedulers;
 using XAct;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -12,10 +14,9 @@ namespace AIO_R
     class Program
     {
         public static string version = "V0.01";
-
-        public static Dictionary<string, BotTask> taskBuffer = new Dictionary<string, BotTask>();
         static void Main()
         {
+
             Console.Title = "UFO AIO " + version;
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("UFO AIO");
@@ -25,6 +26,7 @@ namespace AIO_R
             int inputNumber = IsNumberic(Console.ReadLine());
             while (inputNumber == 0 && inputNumber > 3)
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Error Input");
             }
             BotProxy.Instance.RegisterProxyThread();
@@ -42,10 +44,9 @@ namespace AIO_R
                     taskList = new RunTask(20).RunNumberTask("ABC Raffle Check");
                     break;
             }
+            Task.Factory.StartNew(new WriteBuffer().WriteChangedTask);
             Task.WaitAll(taskList.ToArray());
-            PersonInformation.Instance.writeque(new Dictionary<string, BotTask>(taskBuffer));
-            Console.WriteLine("Waiting for Final!");
-            PersonInformation.defaultWriteMre.WaitOne();
+            PersonInformation.Instance.WriteFinalBuffer();
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Please Write Any Key to Exist!");
             Console.ReadKey();
@@ -58,6 +59,31 @@ namespace AIO_R
             return result == true ? i : 0;
         }
     }
+    class WriteBuffer
+    {
+        public void WriteChangedTask()
+        {
+            List<BotTask> taskBuffer = new List<BotTask>();
+            BotTask botTasksBuffer;
+            while (true)
+            {
+                lock (GlobalInfo.changedListTask)
+                {
+                    if (GlobalInfo.changedListTask.Count > 5)
+                    {
+                        for (int i = 0; i < 5; i++)
+                        {
+                            while (GlobalInfo.changedListTask.TryDequeue(out botTasksBuffer) == false)
+                                taskBuffer.Add(botTasksBuffer);
+                        }
+                        PersonInformation.Instance.WriteQue(taskBuffer);
+                        taskBuffer.Clear();
+                    }
+                }
+            }
+        }
+    }
+
     class RunTask
     {
         TaskFactory fac;
