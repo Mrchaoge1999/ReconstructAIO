@@ -14,8 +14,11 @@ namespace AIO_R.ABC_Buy
     {
         readonly string secret = "secretkey";
         string deviceNumber { get; set; }
-        public AbcRaffle(BotTask botTasks) : base(botTasks)
+
+        private NetInterface Request { get; set; }
+        public AbcRaffle(BotTask botTasks,NetInterface Request) : base(botTasks)
         {
+            this.request = request;
         }
         public override void Initial()
         {

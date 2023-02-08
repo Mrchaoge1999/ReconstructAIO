@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Numerics;
+using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Schedulers;
 using XAct;
@@ -98,23 +99,23 @@ namespace AIO_R
             {
                 foreach (var i in GlobalInfo.listTask)
                 {
-                    taskList.Add(fac.StartNew(new AbcPurchase(i).Initial, TaskCreationOptions.LongRunning));
+                    taskList.Add(fac.StartNew(new AbcPurchase(i,new Request()).Initial, TaskCreationOptions.LongRunning));
                 }
             }
             else if (typeTask.Equals("ABC Raffle"))
             {
                 foreach (var i in GlobalInfo.listTask)
                 {
-                    taskList.Add(fac.StartNew(new AbcPurchase(i).Initial, TaskCreationOptions.LongRunning));
+                    taskList.Add(fac.StartNew(new AbcRaffle(i, new Request()).Initial, TaskCreationOptions.LongRunning));
                 }
             }
             else
             {
                 foreach (var i in GlobalInfo.listTask)
                 {
-                    RaffleProduct abcRaffle = new AbcRaffle(i);
+                    RaffleProduct abcRaffle = new AbcRaffle(i, new Request());
                     abcRaffle.checkRaffle = true;
-                    taskList.Add(fac.StartNew(new AbcPurchase(i).Initial, TaskCreationOptions.LongRunning));
+                    taskList.Add(fac.StartNew(abcRaffle.Initial, TaskCreationOptions.LongRunning));
                 }
             }
             return taskList;

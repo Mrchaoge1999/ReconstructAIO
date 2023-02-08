@@ -8,8 +8,11 @@ namespace AIO_R.ABC_Buy
 {
     internal class AbcPurchase : BuyProduct
     {
-        public AbcPurchase(BotTask botTasks): base(botTasks)
+        private  NetInterface Request { get; set; }
+        public AbcPurchase(BotTask botTasks,NetInterface Request): base(botTasks)
         {
+            this.request = request;
+           // request.Post();
            //buy sequence
         }
         public override void Initial()
